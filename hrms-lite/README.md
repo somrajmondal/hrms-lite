@@ -38,7 +38,6 @@ A lightweight, production-ready Human Resource Management System built for manag
 | Styling    | Custom CSS (no UI framework)  |
 | Backend    | Python, FastAPI               |
 | Database   | SQLite (dev) / PostgreSQL (prod) |
-| ORM        | SQLAlchemy 2.0                |
 | Validation | Pydantic v1                   |
 | Deployment | Vercel (FE) + Render (BE)     |
 
