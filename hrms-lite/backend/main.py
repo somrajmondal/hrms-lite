@@ -22,8 +22,6 @@ app.add_middleware(
 )
 
 
-# ─── Health Check ────────────────────────────────────────────────────────────
-
 @app.get("/")
 def root():
     return {"status": "ok", "message": "HRMS Lite API is running"}
@@ -33,21 +31,19 @@ def root():
 
 @app.post("/employees", response_model=schemas.Employee, status_code=201)
 def create_employee(employee: schemas.EmployeeCreate, db: Session = Depends(get_db)):
-    # Check duplicate employee_id
     existing = db.query(models.Employee).filter(
         models.Employee.employee_id == employee.employee_id
     ).first()
     if existing:
         raise HTTPException(status_code=409, detail=f"Employee ID '{employee.employee_id}' already exists")
 
-    # Check duplicate email
     existing_email = db.query(models.Employee).filter(
         models.Employee.email == employee.email
     ).first()
     if existing_email:
         raise HTTPException(status_code=409, detail=f"Email '{employee.email}' is already registered")
 
-    db_employee = models.Employee(**employee.dict())
+    db_employee = models.Employee(**employee.model_dump())
     db.add(db_employee)
     db.commit()
     db.refresh(db_employee)
@@ -98,7 +94,6 @@ def delete_employee(employee_id: int, db: Session = Depends(get_db)):
     emp = db.query(models.Employee).filter(models.Employee.id == employee_id).first()
     if not emp:
         raise HTTPException(status_code=404, detail="Employee not found")
-    # Delete related attendance records
     db.query(models.Attendance).filter(models.Attendance.employee_id == employee_id).delete()
     db.delete(emp)
     db.commit()
@@ -109,26 +104,23 @@ def delete_employee(employee_id: int, db: Session = Depends(get_db)):
 
 @app.post("/attendance", response_model=schemas.Attendance, status_code=201)
 def mark_attendance(attendance: schemas.AttendanceCreate, db: Session = Depends(get_db)):
-    # Verify employee exists
     emp = db.query(models.Employee).filter(
         models.Employee.id == attendance.employee_id
     ).first()
     if not emp:
         raise HTTPException(status_code=404, detail="Employee not found")
 
-    # Check duplicate date entry
     existing = db.query(models.Attendance).filter(
         models.Attendance.employee_id == attendance.employee_id,
         models.Attendance.date == attendance.date
     ).first()
     if existing:
-        # Update existing record
         existing.status = attendance.status
         db.commit()
         db.refresh(existing)
         return existing
 
-    db_attendance = models.Attendance(**attendance.dict())
+    db_attendance = models.Attendance(**attendance.model_dump())
     db.add(db_attendance)
     db.commit()
     db.refresh(db_attendance)
